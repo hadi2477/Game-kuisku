@@ -1,0 +1,777 @@
+<!DOCTYPE html>  <html lang="id">    <head>      <meta charset="UTF-8">        <meta name="viewport" content="width=device-width, initial-scale=1.0">          <title>Kuis Trivia</title>  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>  <style>          
+* {          
+    box-sizing: border-box;          
+}    body {      
+margin: 0;      
+font-family: Arial, sans-serif;      
+background: #15152e;      
+color: white;      
+min-height: 100vh;      
+display: flex;      
+justify-content: center;      
+align-items: center;      
+padding: 20px;      
+}  .app {    
+background: #252545;    
+width: 100%;    
+max-width: 450px;    
+padding: 25px;    
+border-radius: 20px;    
+}  h1 {  
+text-align: center;  
+color: #a78bfa;  
+}  .info {
+display: flex;
+justify-content: space-between;
+color: #c4b5fd;
+margin-bottom: 15px;
+}
+
+.progress {
+height: 8px;
+background: #44446b;
+border-radius: 10px;
+overflow: hidden;
+margin-bottom: 25px;
+}
+
+.progress-bar {
+height: 100%;
+background: #a78bfa;
+transition: width 0.3s;
+}
+
+.question {
+font-size: 21px;
+font-weight: bold;
+line-height: 1.5;
+margin-bottom: 25px;
+}
+
+.option {
+width: 100%;
+padding: 15px;
+margin-bottom: 12px;
+border: 2px solid #45456b;
+border-radius: 12px;
+background: #303052;
+color: white;
+font-size: 16px;
+text-align: left;
+cursor: pointer;
+}
+
+.option:hover:not(:disabled) {
+background: #454570;
+}
+
+.option.correct {
+background: #166534;
+border-color: #22c55e;
+}
+
+.option.wrong {
+background: #991b1b;
+border-color: #ef4444;
+}
+
+.option:disabled {
+cursor: default;
+}
+
+.message {
+text-align: center;
+font-weight: bold;
+margin: 20px 0;
+min-height: 24px;
+}
+
+.next, .restart {
+width: 100%;
+padding: 14px;
+border: none;
+border-radius: 12px;
+background: #8b5cf6;
+color: white;
+font-size: 17px;
+cursor: pointer;
+margin-top: 10px;
+}
+
+.next:hover, .restart:hover {
+background: #7c3aed;
+}
+
+.result {
+text-align: center;
+}
+
+.big-score {
+font-size: 55px;
+color: #facc15;
+font-weight: bold;
+}
+
+.timer {
+color: #facc15;
+font-weight: bold;
+}
+</style>  </head>  <body>  <div id="app" class="app">  <h1>🧠 Kuis Trivia</h1>
+
+<!-- HALAMAN KUIS -->    <div v-if="!selesai">    <div class="info">      <span>Soal {{ index + 1 }}/{{ questions.length }}</span>        <span>⭐ {{ skor }} poin</span>  </div>      <div class="progress">          
+    <div          
+        class="progress-bar"          
+        :style="{ width: ((index + 1) / questions.length * 100) + '%' }"          
+    ></div>          
+</div>      <div class="info">          
+    <span>Waktu tersisa</span>          
+    <span class="timer">{{ waktu }} detik</span>          
+</div>      <div class="question">          
+    {{ questions[index].question }}          
+</div>      <button    
+v-for="(option, i) in questions[index].options"    
+:key="i"    
+class="option"    
+:class="{    
+correct: dijawab && option === questions[index].answer,    
+wrong: dijawab && option === jawaban && option !== questions[index].answer    
+}"    
+:disabled="dijawab"    
+@click="cekJawaban(option)"  >   {{ option }}
+
+</button>      <div class="message">
+{{ pesan }}
+
+</div>      <button    
+v-if="dijawab"    
+class="next"    
+@click="soalBerikutnya"  >   {{ index === questions.length - 1 ? 'Lihat Hasil' : 'Soal Berikutnya →' }}
+
+</button>  </div>    <!-- HALAMAN HASIL -->    <div v-else class="result">    <h2>🎉 Kuis Selesai!</h2>      <p>Skor Akhir Kamu</p>      <div class="big-score">
+{{ skor }}
+
+</div>      <p>Benar: {{ benar }} dari {{ questions.length }} soal</p>      <p>{{ hasilPesan }}</p>      <button class="restart" @click="ulangGame">    
+🔄 Main Lagi    
+</button>  </div>  </div>  <script>          
+const { createApp } = Vue;    createApp({  data() {    
+return {  index: 0,  
+skor: 0,  
+benar: 0,  
+waktu: 15,  
+dijawab: false,  
+jawaban: null,  
+pesan: "",  
+selesai: false,  
+timer: null,  questions: [
+// 1–20: Sains dan Teknologi
+{
+question: "Apa planet terbesar di tata surya?",
+options: ["Mars", "Bumi", "Jupiter", "Saturnus"],
+answer: "Jupiter"
+},
+{
+question: "Apa pusat tata surya kita?",
+options: ["Bulan", "Matahari", "Bumi", "Mars"],
+answer: "Matahari"
+},
+{
+question: "Apa rumus kimia air?",
+options: ["CO2", "O2", "H2O", "NaCl"],
+answer: "H2O"
+},
+{
+question: "Organ tubuh apa yang memompa darah?",
+options: ["Paru-paru", "Jantung", "Ginjal", "Lambung"],
+answer: "Jantung"
+},
+{
+question: "Apa gas yang dibutuhkan manusia untuk bernapas?",
+options: ["Nitrogen", "Karbon dioksida", "Oksigen", "Helium"],
+answer: "Oksigen"
+},
+{
+question: "Berapa jumlah planet dalam tata surya?",
+options: ["7", "8", "9", "10"],
+answer: "8"
+},
+{
+question: "Apa satuan dasar untuk mengukur arus listrik?",
+options: ["Volt", "Watt", "Ampere", "Ohm"],
+answer: "Ampere"
+},
+{
+question: "Apa nama satelit alami Bumi?",
+options: ["Matahari", "Bulan", "Mars", "Venus"],
+answer: "Bulan"
+},
+{
+question: "Alat untuk mengukur suhu disebut?",
+options: ["Barometer", "Termometer", "Higrometer", "Speedometer"],
+answer: "Termometer"
+},
+{
+question: "Apa bagian terkecil penyusun makhluk hidup?",
+options: ["Organ", "Jaringan", "Sel", "Sistem organ"],
+answer: "Sel"
+},
+{
+question: "Siapa yang dikenal sebagai penemu telepon?",
+options: ["Alexander Graham Bell", "Isaac Newton", "Albert Einstein", "Galileo Galilei"],
+answer: "Alexander Graham Bell"
+},
+{
+question: "Apa kepanjangan CPU dalam komputer?",
+options: ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Control Processing User"],
+answer: "Central Processing Unit"
+},
+{
+question: "Apa fungsi utama RAM?",
+options: ["Mencetak dokumen", "Menyimpan data sementara", "Menampilkan gambar", "Menghubungkan internet"],
+answer: "Menyimpan data sementara"
+},
+{
+question: "Bahasa pemrograman yang menggunakan ekstensi .py adalah?",
+options: ["Java", "Python", "HTML", "CSS"],
+answer: "Python"
+},
+{
+question: "Apa kepanjangan HTML?",
+options: ["HyperText Markup Language", "HighText Machine Language", "HyperTool Multi Language", "HomeText Markup Language"],
+answer: "HyperText Markup Language"
+},
+{
+question: "Perangkat untuk menggerakkan kursor komputer disebut?",
+options: ["Keyboard", "Monitor", "Mouse", "Speaker"],
+answer: "Mouse"
+},
+{
+question: "Apa nama teknologi jaringan tanpa kabel yang umum digunakan untuk internet?",
+options: ["USB", "Wi-Fi", "HDMI", "VGA"],
+answer: "Wi-Fi"
+},
+{
+question: "Siapa ilmuwan yang terkenal dengan teori relativitas?",
+options: ["Isaac Newton", "Albert Einstein", "Thomas Edison", "Nikola Tesla"],
+answer: "Albert Einstein"
+},
+{
+question: "Apa nama proses tumbuhan membuat makanan?",
+options: ["Respirasi", "Fotosintesis", "Fermentasi", "Evaporasi"],
+answer: "Fotosintesis"
+},
+{
+question: "Berapa jumlah tulang pada manusia dewasa pada umumnya?",
+options: ["106", "206", "306", "406"],
+answer: "206"
+},
+
+// 21–35: Sejarah
+{
+question: "Kapan Indonesia memproklamasikan kemerdekaan?",
+options: ["17 Agustus 1945", "10 November 1945", "1 Juni 1945", "20 Mei 1908"],
+answer: "17 Agustus 1945"
+},
+{
+question: "Siapa presiden pertama Indonesia?",
+options: ["Soeharto", "Soekarno", "B.J. Habibie", "Joko Widodo"],
+answer: "Soekarno"
+},
+{
+question: "Siapa wakil presiden pertama Indonesia?",
+options: ["Mohammad Hatta", "Adam Malik", "Sultan Hamengkubuwono IX", "Soedharmono"],
+answer: "Mohammad Hatta"
+},
+{
+question: "Apa nama organisasi pergerakan nasional yang berdiri pada 1908?",
+options: ["Sarekat Islam", "Budi Utomo", "PETA", "BPUPKI"],
+answer: "Budi Utomo"
+},
+{
+question: "Siapa yang membacakan teks proklamasi Indonesia?",
+options: ["Mohammad Hatta", "Soekarno", "Sutan Sjahrir", "Ki Hajar Dewantara"],
+answer: "Soekarno"
+},
+{
+question: "Di kota mana bom atom dijatuhkan pada 1945 di Jepang?",
+options: ["Tokyo dan Osaka", "Hiroshima dan Nagasaki", "Kyoto dan Kobe", "Yokohama dan Nara"],
+answer: "Hiroshima dan Nagasaki"
+},
+{
+question: "Siapa tokoh yang dikenal sebagai Bapak Pendidikan Nasional Indonesia?",
+options: ["Ki Hajar Dewantara", "Soekarno", "Mohammad Yamin", "R.A. Kartini"],
+answer: "Ki Hajar Dewantara"
+},
+{
+question: "Kapan Sumpah Pemuda diikrarkan?",
+options: ["1908", "1928", "1945", "1950"],
+answer: "1928"
+},
+{
+question: "Siapa pahlawan perempuan dari Jepara?",
+options: ["Cut Nyak Dien", "R.A. Kartini", "Dewi Sartika", "Martha Christina Tiahahu"],
+answer: "R.A. Kartini"
+},
+{
+question: "Apa nama kerajaan maritim besar yang berpusat di Sumatra?",
+options: ["Majapahit", "Sriwijaya", "Mataram", "Singasari"],
+answer: "Sriwijaya"
+},
+{
+question: "Siapa pendiri Kerajaan Majapahit?",
+options: ["Gajah Mada", "Raden Wijaya", "Hayam Wuruk", "Ken Arok"],
+answer: "Raden Wijaya"
+},
+{
+question: "Perang Diponegoro berlangsung pada tahun berapa?",
+options: ["1825–1830", "1908–1912", "1945–1949", "1750–1755"],
+answer: "1825–1830"
+},
+{
+question: "Siapa tokoh yang dikenal dengan julukan Bapak Proklamator Indonesia bersama Soekarno?",
+options: ["Mohammad Hatta", "Soeharto", "Sutan Sjahrir", "Tan Malaka"],
+answer: "Mohammad Hatta"
+},
+{
+question: "Apa nama peristiwa pertempuran besar pada 10 November 1945?",
+options: ["Bandung Lautan Api", "Pertempuran Surabaya", "Pertempuran Ambarawa", "Serangan Umum 1 Maret"],
+answer: "Pertempuran Surabaya"
+},
+{
+question: "Siapa presiden Indonesia ketiga?",
+options: ["Abdurrahman Wahid", "B.J. Habibie", "Megawati Soekarnoputri", "Soeharto"],
+answer: "B.J. Habibie"
+},
+
+// 36–50: Geografi
+{
+question: "Apa ibu kota Jepang?",
+options: ["Seoul", "Tokyo", "Beijing", "Bangkok"],
+answer: "Tokyo"
+},
+{
+question: "Apa negara terbesar di dunia berdasarkan luas wilayah?",
+options: ["Kanada", "China", "Rusia", "Amerika Serikat"],
+answer: "Rusia"
+},
+{
+question: "Apa samudra terluas di dunia?",
+options: ["Atlantik", "Hindia", "Arktik", "Pasifik"],
+answer: "Pasifik"
+},
+{
+question: "Gunung tertinggi di dunia adalah?",
+options: ["Kilimanjaro", "Everest", "Fuji", "Elbrus"],
+answer: "Everest"
+},
+{
+question: "Apa ibu kota Australia?",
+options: ["Sydney", "Melbourne", "Canberra", "Perth"],
+answer: "Canberra"
+},
+{
+question: "Indonesia terletak di kawasan?",
+options: ["Asia Tenggara", "Asia Timur", "Asia Barat", "Eropa Timur"],
+answer: "Asia Tenggara"
+},
+{
+question: "Apa nama sungai terpanjang di dunia menurut pengukuran yang umum digunakan?",
+options: ["Amazon", "Nil", "Yangtze", "Mississippi"],
+answer: "Nil"
+},
+{
+question: "Apa ibu kota Thailand?",
+options: ["Hanoi", "Bangkok", "Manila", "Kuala Lumpur"],
+answer: "Bangkok"
+},
+{
+question: "Benua terbesar di dunia adalah?",
+options: ["Afrika", "Eropa", "Asia", "Australia"],
+answer: "Asia"
+},
+{
+question: "Negara yang terkenal dengan Menara Eiffel adalah?",
+options: ["Italia", "Prancis", "Jerman", "Spanyol"],
+answer: "Prancis"
+},
+{
+question: "Apa ibu kota Korea Selatan?",
+options: ["Pyongyang", "Seoul", "Busan", "Incheon"],
+answer: "Seoul"
+},
+{
+question: "Danau Toba berada di provinsi?",
+options: ["Sumatra Barat", "Sumatra Utara", "Aceh", "Riau"],
+answer: "Sumatra Utara"
+},
+{
+question: "Apa nama gurun panas terbesar di dunia?",
+options: ["Gobi", "Sahara", "Kalahari", "Arab"],
+answer: "Sahara"
+},
+{
+question: "Negara yang memiliki piramida Giza adalah?",
+options: ["Mesir", "Yunani", "India", "Meksiko"],
+answer: "Mesir"
+},
+{
+question: "Apa ibu kota Provinsi Jawa Barat?",
+options: ["Semarang", "Bandung", "Surabaya", "Serang"],
+answer: "Bandung"
+},
+
+// 51–65: Matematika
+{
+question: "Berapa hasil dari 12 × 8?",
+options: ["86", "96", "106", "108"],
+answer: "96"
+},
+{
+question: "Berapa hasil dari 144 ÷ 12?",
+options: ["10", "11", "12", "14"],
+answer: "12"
+},
+{
+question: "Berapa hasil dari 25 + 37?",
+options: ["52", "62", "72", "82"],
+answer: "62"
+},
+{
+question: "Berapa hasil dari 100 − 45?",
+options: ["45", "50", "55", "65"],
+answer: "55"
+},
+{
+question: "Berapa nilai 15% dari 200?",
+options: ["20", "25", "30", "35"],
+answer: "30"
+},
+{
+question: "Bangun datar yang memiliki tiga sisi disebut?",
+options: ["Persegi", "Segitiga", "Lingkaran", "Trapesium"],
+answer: "Segitiga"
+},
+{
+question: "Berapa jumlah sudut dalam segitiga?",
+options: ["90 derajat", "180 derajat", "270 derajat", "360 derajat"],
+answer: "180 derajat"
+},
+{
+question: "Berapa hasil dari 9²?",
+options: ["18", "72", "81", "99"],
+answer: "81"
+},
+{
+question: "Bilangan prima terkecil adalah?",
+options: ["0", "1", "2", "3"],
+answer: "2"
+},
+{
+question: "Berapa hasil dari 7 × 7?",
+options: ["42", "49", "56", "63"],
+answer: "49"
+},
+{
+question: "Berapa setengah dari 250?",
+options: ["100", "115", "125", "150"],
+answer: "125"
+},
+{
+question: "Berapa hasil dari 3³?",
+options: ["9", "18", "27", "36"],
+answer: "27"
+},
+{
+question: "Berapa banyak sisi pada sebuah kubus?",
+options: ["4", "6", "8", "12"],
+answer: "6"
+},
+{
+question: "Berapa nilai angka Romawi X?",
+options: ["5", "10", "50", "100"],
+answer: "10"
+},
+{
+question: "Jika x + 5 = 12, berapa nilai x?",
+options: ["5", "6", "7", "8"],
+answer: "7"
+},
+
+// 66–80: Hewan dan Alam
+{
+question: "Hewan darat tercepat di dunia adalah?",
+options: ["Singa", "Cheetah", "Kuda", "Harimau"],
+answer: "Cheetah"
+},
+{
+question: "Hewan terbesar di dunia adalah?",
+options: ["Gajah Afrika", "Hiu paus", "Paus biru", "Jerapah"],
+answer: "Paus biru"
+},
+{
+question: "Apa makanan utama panda raksasa?",
+options: ["Daging", "Bambu", "Ikan", "Rumput laut"],
+answer: "Bambu"
+},
+{
+question: "Hewan yang dikenal sebagai raja hutan adalah?",
+options: ["Harimau", "Singa", "Gajah", "Serigala"],
+answer: "Singa"
+},
+{
+question: "Apa nama anak katak?",
+options: ["Berudu", "Larva", "Ulat", "Nimfa"],
+answer: "Berudu"
+},
+{
+question: "Hewan mamalia yang dapat terbang adalah?",
+options: ["Elang", "Kelelawar", "Kupu-kupu", "Burung hantu"],
+answer: "Kelelawar"
+},
+{
+question: "Berapa jumlah kaki laba-laba?",
+options: ["6", "8", "10", "12"],
+answer: "8"
+},
+{
+question: "Hewan yang menghasilkan madu adalah?",
+options: ["Semut", "Lebah", "Kupu-kupu", "Capung"],
+answer: "Lebah"
+},
+{
+question: "Apa nama proses perubahan ulat menjadi kupu-kupu?",
+options: ["Fotosintesis", "Metamorfosis", "Evaporasi", "Adaptasi"],
+answer: "Metamorfosis"
+},
+{
+question: "Hewan yang memiliki leher sangat panjang adalah?",
+options: ["Zebra", "Jerapah", "Unta", "Rusa"],
+answer: "Jerapah"
+},
+{
+question: "Apa nama lapisan terluar Bumi?",
+options: ["Inti dalam", "Inti luar", "Kerak Bumi", "Mantel"],
+answer: "Kerak Bumi"
+},
+{
+question: "Apa sumber energi utama bagi Bumi?",
+options: ["Bulan", "Matahari", "Angin", "Gunung berapi"],
+answer: "Matahari"
+},
+{
+question: "Hewan yang bernapas menggunakan insang adalah?",
+options: ["Kucing", "Ikan", "Ayam", "Kambing"],
+answer: "Ikan"
+},
+{
+question: "Apa nama hewan khas Indonesia yang berasal dari Nusa Tenggara Timur?",
+options: ["Panda", "Komodo", "Kanguru", "Koala"],
+answer: "Komodo"
+},
+{
+question: "Tumbuhan yang hidup di daerah gurun dan menyimpan air adalah?",
+options: ["Teratai", "Kaktus", "Padi", "Anggrek"],
+answer: "Kaktus"
+},
+
+// 81–100: Pengetahuan Umum
+{
+question: "Apa bahasa resmi negara Indonesia?",
+options: ["Bahasa Jawa", "Bahasa Indonesia", "Bahasa Sunda", "Bahasa Inggris"],
+answer: "Bahasa Indonesia"
+},
+{
+question: "Apa lambang negara Indonesia?",
+options: ["Harimau", "Garuda Pancasila", "Elang Jawa", "Komodo"],
+answer: "Garuda Pancasila"
+},
+{
+question: "Berapa jumlah sila dalam Pancasila?",
+options: ["3", "4", "5", "6"],
+answer: "5"
+},
+{
+question: "Apa warna bendera Indonesia?",
+options: ["Merah dan putih", "Biru dan putih", "Merah dan kuning", "Hijau dan putih"],
+answer: "Merah dan putih"
+},
+{
+question: "Apa nama mata uang Indonesia?",
+options: ["Ringgit", "Rupiah", "Baht", "Peso"],
+answer: "Rupiah"
+},
+{
+question: "Berapa jumlah hari dalam satu tahun kabisat?",
+options: ["364", "365", "366", "367"],
+answer: "366"
+},
+{
+question: "Ada berapa warna dalam pelangi menurut pembagian yang umum diajarkan?",
+options: ["5", "6", "7", "8"],
+answer: "7"
+},
+{
+question: "Apa nama alat musik tradisional dari Jawa Barat yang terbuat dari bambu?",
+options: ["Sasando", "Angklung", "Kolintang", "Tifa"],
+answer: "Angklung"
+},
+{
+question: "Olahraga sepak bola dimainkan oleh berapa pemain dalam satu tim di lapangan?",
+options: ["9", "10", "11", "12"],
+answer: "11"
+},
+{
+question: "Berapa jumlah cincin pada lambang Olimpiade?",
+options: ["3", "4", "5", "6"],
+answer: "5"
+},
+{
+question: "Apa nama hari setelah hari Jumat?",
+options: ["Kamis", "Sabtu", "Minggu", "Senin"],
+answer: "Sabtu"
+},
+{
+question: "Apa nama kitab suci umat Islam?",
+options: ["Al-Qur'an", "Weda", "Tripitaka", "Taurat"],
+answer: "Al-Qur'an"
+},
+{
+question: "Apa nama organisasi negara-negara di Asia Tenggara?",
+options: ["NATO", "ASEAN", "OPEC", "APEC"],
+answer: "ASEAN"
+},
+{
+question: "Kapan Hari Pendidikan Nasional diperingati di Indonesia?",
+options: ["2 Mei", "17 Agustus", "10 November", "28 Oktober"],
+answer: "2 Mei"
+},
+{
+question: "Apa nama rumah adat khas Sumatra Barat?",
+options: ["Rumah Gadang", "Joglo", "Honai", "Tongkonan"],
+answer: "Rumah Gadang"
+},
+{
+question: "Apa nama tarian tradisional dari Bali yang terkenal?",
+options: ["Saman", "Kecak", "Piring", "Jaipong"],
+answer: "Kecak"
+},
+{
+question: "Berapa jumlah bulan dalam satu tahun?",
+options: ["10", "11", "12", "13"],
+answer: "12"
+},
+{
+question: "Apa nama alat untuk menunjukkan arah mata angin?",
+options: ["Termometer", "Kompas", "Mikroskop", "Teleskop"],
+answer: "Kompas"
+},
+{
+question: "Apa nama mata uang Jepang?",
+options: ["Won", "Yuan", "Yen", "Baht"],
+answer: "Yen"
+},
+{
+question: "Apa nama planet yang dikenal sebagai planet merah?",
+options: ["Venus", "Mars", "Merkurius", "Neptunus"],
+answer: "Mars"
+}
+]
+
+};
+},
+
+computed: {
+hasilPesan() {
+if (this.benar === 100) {
+return "Luar biasa! Semua jawaban benar! 🏆";
+} else if (this.benar >= 70) {
+return "Hebat! Pengetahuanmu bagus!";
+} else if (this.benar >= 40) {
+return "Bagus! Terus belajar!";
+} else {
+return "Ayo belajar dan coba lagi!";
+}
+}
+},
+
+methods: {
+cekJawaban(option) {
+if (this.dijawab) return;
+
+this.dijawab = true;
+this.jawaban = option;
+this.stopTimer();
+
+if (option === this.questions[this.index].answer) {
+this.skor += 10;
+this.benar++;
+this.pesan = "Benar! 🎉";
+} else {
+this.pesan = "Salah! Jawaban: " +
+this.questions[this.index].answer;
+}
+
+},
+
+soalBerikutnya() {
+if (this.index < this.questions.length - 1) {
+this.index++;
+this.dijawab = false;
+this.jawaban = null;
+this.pesan = "";
+this.mulaiTimer();
+} else {
+this.selesai = true;
+this.stopTimer();
+}
+},
+
+mulaiTimer() {
+this.stopTimer();
+this.waktu = 15;
+
+this.timer = setInterval(() => {
+if (this.waktu > 0) {
+this.waktu--;
+} else {
+this.dijawab = true;
+this.pesan = "Waktu habis! ⏰ Jawaban: " +
+this.questions[this.index].answer;
+this.stopTimer();
+}
+}, 1000);
+
+},
+
+stopTimer() {
+clearInterval(this.timer);
+this.timer = null;
+},
+
+ulangGame() {
+this.stopTimer();
+this.index = 0;
+this.skor = 0;
+this.benar = 0;
+this.waktu = 15;
+this.dijawab = false;
+this.jawaban = null;
+this.pesan = "";
+this.selesai = false;
+this.mulaiTimer();
+}
+
+},
+
+mounted() {
+this.mulaiTimer();
+},
+
+beforeUnmount() {
+this.stopTimer();
+}
+
+}).mount("#app");
+</script>
+
+</body>   
+</html>          
